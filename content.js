@@ -278,6 +278,38 @@
     });
   }
 
+  // --- New: Capture scroll positions for elements with overflow auto/scroll ---
+  function captureScrollPositions() {
+    const elements = document.querySelectorAll('*');
+    elements.forEach(function(el) {
+    const style = window.getComputedStyle(el);
+    if (
+      /(auto|scroll)/.test(style.overflow) ||
+      /(auto|scroll)/.test(style.overflowX) ||
+      /(auto|scroll)/.test(style.overflowY)
+    ) {
+      // Store current scroll positions as data attributes.
+      el.setAttribute('data-scrolltop', el.scrollTop);
+      el.setAttribute('data-scrollleft', el.scrollLeft);
+    }
+    });
+  }
+
+  // Append an inline script that resets the scroll positions on page load.
+  function injectScrollResetScript() {
+    const scriptEl = document.createElement("script");
+    scriptEl.textContent =
+    "document.addEventListener('DOMContentLoaded', function() {" +
+    "  document.querySelectorAll('[data-scrolltop]').forEach(function(el) {" +
+    "  el.scrollTop = el.getAttribute('data-scrolltop');" +
+    "  });" +
+    "  document.querySelectorAll('[data-scrollleft]').forEach(function(el) {" +
+    "  el.scrollLeft = el.getAttribute('data-scrollleft');" +
+    "  });" +
+    "});";
+    document.body.appendChild(scriptEl);
+  }
+
   // Run all processing steps sequentially.
   await inlineImages();
   await inlineStylesheets();
@@ -287,6 +319,10 @@
   removeScripts();
   removeEventHandlers();
   fixTextNodesWithTextarea();
+
+  // Capture scroll positions for scrollable elements and inject the reset script.
+  captureScrollPositions();
+  injectScrollResetScript();
 
   let serializer = new XMLSerializer();
   let finalHtml = serializer.serializeToString(document);
